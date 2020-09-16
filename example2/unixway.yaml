@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: unixway
+---
+apiVersion: "acid.zalan.do/v1"
+kind: postgresql
+metadata:
+  name: acid-postgresql-cluster1
+  namespace: unixway
+spec:
+  teamId: "acid"
+  volume:
+    size: 5Gi
+    storageClass: managed-nfs-storage
+  numberOfInstances: 3
+  users:
+    zalando:  # database owner
+    - superuser
+    - createdb
+    foo_user: []  # role for application foo
+  databases:
+    foo: zalando  # dbname: owner
+  preparedDatabases:
+    bar: {}
+  postgresql:
+    version: "12"
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512M
+    limits:
+      cpu: 500m
+      memory: 512M
+  connectionPooler:
+    numberOfInstances: 2
+    mode: "transaction"
+    schema: "pooler"
+    user: "pooler"
+    resources:
+      requests:
+        cpu: 300m
+        memory: 100Mi
+      limits:
+        cpu: "1"
+        memory: 100Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: client-example
+  namespace: unixway
+spec:
+  containers:
+    - name: app
+      image: centos:7
+      command: ["/bin/sh"]
+      args: ["-c", "while true; do echo hello; sleep 10;done"]
